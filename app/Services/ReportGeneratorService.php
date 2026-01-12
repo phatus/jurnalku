@@ -27,6 +27,8 @@ class ReportGeneratorService
         $activities = Activity::where('user_id', $user->id)
             ->whereYear('activity_date', $year)
             ->whereMonth('activity_date', $month)
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
             ->orderBy('activity_date')
             ->get();
 
@@ -61,6 +63,8 @@ class ReportGeneratorService
         $activities = Activity::where('user_id', $user->id)
             ->whereYear('activity_date', $year)
             ->whereMonth('activity_date', $month)
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
             ->orderBy('activity_date')
             ->orderBy('period_start')
             ->get();
@@ -99,6 +103,8 @@ class ReportGeneratorService
             ->where('user_id', $user->id)
             ->whereYear('activity_date', $year)
             ->whereMonth('activity_date', $month)
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
             ->with('category')
             ->get()
             ->groupBy('category_id');
