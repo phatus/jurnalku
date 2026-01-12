@@ -27,8 +27,8 @@ class User extends Authenticatable implements FilamentUser
         'jabatan',
         'unit_kerja',
         'subject',
-        'headmaster_name',
-        'headmaster_nip',
+        'unit_kerja',
+        'subject',
     ];
 
     /**

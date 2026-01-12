@@ -57,6 +57,10 @@ class ActivityResource extends Resource
                 Forms\Components\TextInput::make('evidence_link')
                     ->label('Link Bukti (Google Drive)')
                     ->url()
+                    ->regex('/^https:\/\/drive\.google\.com\/.+/')
+                    ->validationMessages([
+                        'regex' => 'Link harus berasal dari Google Drive (https://drive.google.com/...)',
+                    ])
                     ->suffixIcon('heroicon-m-globe-alt')
                     ->maxLength(255),
 

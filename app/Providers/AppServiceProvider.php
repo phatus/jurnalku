@@ -19,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Support\Facades\URL::forceScheme('https');
+        if (app()->isProduction()) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
+        \Illuminate\Database\Eloquent\Model::shouldBeStrict(! app()->isProduction());
     }
 }
