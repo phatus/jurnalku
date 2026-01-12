@@ -57,7 +57,11 @@
                         @endif
                         
                         <td class="text-center">{{ $activity->class_name }}</td>
-                        <td class="text-center">{{ $activity->period_start }} - {{ $activity->period_end }}</td>
+                        <td class="text-center">
+                            @if($activity->period_start)
+                                {{ $activity->period_start }} - {{ $activity->period_end }}
+                            @endif
+                        </td>
                         <td>{{ $activity->topic }}</td>
                         <td>{{ $activity->student_outcome ?? '' }}</td>
                         <td></td>
