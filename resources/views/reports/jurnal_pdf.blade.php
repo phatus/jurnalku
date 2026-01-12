@@ -59,7 +59,7 @@
                         <td class="text-center">{{ $activity->class_name }}</td>
                         <td class="text-center">{{ $activity->period_start }} - {{ $activity->period_end }}</td>
                         <td>{{ $activity->topic }}</td>
-                        <td>{{ $activity->student_outcome ?? '-' }}</td>
+                        <td>{{ $activity->student_outcome ?? '' }}</td>
                         <td></td>
                     </tr>
                 @endforeach

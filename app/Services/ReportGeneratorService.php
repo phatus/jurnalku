@@ -123,11 +123,11 @@ class ReportGeneratorService
         $template->cloneRow('rhk', max(1, $reportData->count()));
 
         if ($reportData->isEmpty()) {
-            $template->setValue("no#1", '-');
-            $template->setValue("rhk#1", '-');
+            $template->setValue("no#1", '');
+            $template->setValue("rhk#1", '');
             $template->setValue("kegiatan#1", 'Belum ada kegiatan');
-            $template->setValue("vol#1", '-');
-            $template->setValue("eviden#1", '-');
+            $template->setValue("vol#1", '');
+            $template->setValue("eviden#1", '');
         } else {
             $index = 0;
             foreach ($reportData as $categoryId => $activities) {
@@ -141,7 +141,7 @@ class ReportGeneratorService
                 $template->setValue("rhk#{$index}", $category->rhk_label);
                 $template->setValue("kegiatan#{$index}", $category->name);
                 $template->setValue("vol#{$index}", "{$count} kgt"); 
-                $template->setValue("eviden#{$index}", $evidenceLinks ?: '-');
+                $template->setValue("eviden#{$index}", $evidenceLinks ?: '');
             }
         }
 

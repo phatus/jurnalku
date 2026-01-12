@@ -56,7 +56,7 @@
                             </td>
                         @endif
                         
-                        <td>{{ $activity->reference_source ?? '-' }}</td>
+                        <td>{{ $activity->reference_source ?? '' }}</td>
                         <td>{{ $activity->description }}</td>
                         <td>{{ $activity->output_result ?? 'Terlaksana' }}</td>
                         <td></td>
