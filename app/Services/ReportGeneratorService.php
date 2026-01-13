@@ -30,6 +30,10 @@ class ReportGeneratorService
             ->whereMonth('activity_date', $month)
             ->whereNotNull('description')
             ->where('description', '!=', '')
+            ->where(function ($query) {
+                // Strict Filter: Exclude single dash, dot, or whitespace
+                $query->whereRaw("TRIM(description) NOT IN ('-', '.', '')");
+            })
             ->orderBy('activity_date')
             ->get();
 
@@ -180,8 +184,16 @@ class ReportGeneratorService
             ->where('user_id', $user->id)
             ->whereYear('activity_date', $year)
             ->whereMonth('activity_date', $month)
-            ->whereNotNull('description')
-            ->where('description', '!=', '')
+            // Filter only Teaching Categories
+            ->whereHas('category', function ($query) {
+                $query->where('is_teaching', true);
+            })
+            // Strict Filter for Topic (Materi)
+            ->whereNotNull('topic')
+            ->where('topic', '!=', '')
+            ->where(function ($query) {
+                $query->whereRaw("TRIM(topic) NOT IN ('-', '.', '')");
+            })
             ->orderBy('activity_date')
             ->orderBy('period_start')
             ->get();
