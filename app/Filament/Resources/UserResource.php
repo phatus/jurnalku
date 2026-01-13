@@ -61,7 +61,7 @@ class UserResource extends Resource
                             ->maxLength(255),
                     ])->columns(2),
 
-                    ])->columns(2),
+
             ]);
     }
 
