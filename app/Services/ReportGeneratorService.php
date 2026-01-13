@@ -369,7 +369,7 @@ class ReportGeneratorService
                 $category = $activities->first()->category;
                 $count = $activities->count();
                 
-                $evidenceLinks = $activities->pluck('evidence_link')->filter()->implode("\n");
+                $evidenceLinks = $activities->pluck('evidence_link')->filter()->unique()->implode("\n");
 
                 $template->setValue("no#{$index}", $index);
                 $template->setValue("rhk#{$index}", $category->rhk_label);
