@@ -195,6 +195,24 @@ class ReportGeneratorService
         $template->setValue('monthName', Carbon::createFromDate($year, $month, 1)->translatedFormat('F'));
         $template->setValue('year', $year);
 
+        // Header Info
+        $template->setValue('nama_guru', $user->name);
+        $template->setValue('mapel', $user->subject ?? '-');
+        $template->setValue('bulan', Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y'));
+
+        // Determine Semester & Year Info
+        // July(7) to Dec(12) = Ganjil, Year = Current - Next
+        // Jan(1) to June(6) = Genap, Year = Prev - Current
+        if ($month >= 7) {
+            $semester = 'GANJIL';
+            $tahunAjaran = "{$year}/" . ($year + 1);
+        } else {
+            $semester = 'GENAP';
+            $tahunAjaran = ($year - 1) . "/{$year}";
+        }
+        $template->setValue('semester', $semester);
+        $template->setValue('tahun_ajaran', $tahunAjaran);
+
         // Signatures
         $template->setValue('signatureDate', Carbon::createFromDate($year, $month, 1)->endOfMonth()->translatedFormat('j F Y'));
         $template->setValue('user_name', $user->name);
@@ -202,15 +220,32 @@ class ReportGeneratorService
         $template->setValue('headmaster_name', $school->headmaster_name ?? '.........................');
         $template->setValue('headmaster_nip', $school->headmaster_nip ?? '................');
 
-        // Rows
-        $values = [];
+        // Table Generation
+        $table = new \PhpOffice\PhpWord\Element\Table([
+            'borderSize' => 6, 
+            'borderColor' => '000000', 
+            'cellMargin' => 50,
+            'alignment' => \PhpOffice\PhpWord\SimpleType\JcTable::CENTER,
+            'unit' => \PhpOffice\PhpWord\SimpleType\TblWidth::PERCENT, 
+            'width' => 100 * 50 
+        ]);
+
+        // Table Header
+        $table->addRow();
+        $table->addCell(700)->addText('NO.', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(2500)->addText('HARI/TANGGAL', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(2000)->addText('KELAS', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(2000)->addText('JAM KE-', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(5000)->addText('URAIAN PEKERJAAN', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(2500)->addText('KET.', ['bold' => true], ['alignment' => 'center']);
+
         $no = 1;
         $lastDate = null;
 
         foreach ($activities as $activity) {
             $currentDate = $activity->activity_date->format('Y-m-d');
             
-            // Format Class Rooms: join names
+            // Format Class Rooms
             $classNames = $activity->classRooms->count() > 0 
                 ? $activity->classRooms->pluck('name')->join(', ') 
                 : ($activity->class_name ?? '-');
@@ -219,26 +254,41 @@ class ReportGeneratorService
                 ? "{$activity->period_start} - {$activity->period_end}" 
                 : '-';
 
-            $row = [
-                'kelas' => $classNames,
-                'jam' => $jam,
-                'materi' => $activity->topic ?? '-',
-                'ketuntasan' => $activity->student_outcome ?? '',
-            ];
+            $materi = $activity->topic ?? '-';
+            $ket = $activity->student_outcome ?? '';
 
+            $table->addRow();
+
+            // 1. NO (Merge logic)
             if ($currentDate !== $lastDate) {
-                $row['no'] = $no++;
-                $row['hari_tanggal'] = $activity->activity_date->translatedFormat('l, j F Y');
-                $lastDate = $currentDate;
+                $table->addCell(700, ['vMerge' => 'restart'])->addText($no++);
             } else {
-                $row['no'] = '';
-                $row['hari_tanggal'] = '';
+                $table->addCell(700, ['vMerge' => 'continue']);
             }
 
-            $values[] = $row;
+            // 2. DATE (Merge logic)
+            if ($currentDate !== $lastDate) {
+                $table->addCell(2500, ['vMerge' => 'restart'])->addText($activity->activity_date->translatedFormat('l, j F Y'));
+            } else {
+                $table->addCell(2500, ['vMerge' => 'continue']);
+            }
+
+            // 3. KELAS
+            $table->addCell(2000)->addText($classNames);
+
+            // 4. JAM
+            $table->addCell(2000)->addText($jam);
+
+            // 5. URAIAN
+            $table->addCell(5000)->addText($materi);
+
+            // 6. KET
+            $table->addCell(2500)->addText($ket);
+
+            $lastDate = $currentDate;
         }
 
-        $template->cloneRowAndSetValues('no', $values);
+        $template->setComplexBlock('table_block', $table);
 
         $filename = "Jurnal_{$user->name}_{$month}-{$year}.docx";
         $path = storage_path("app/public/{$filename}");
