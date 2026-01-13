@@ -61,14 +61,6 @@ class UserResource extends Resource
                             ->maxLength(255),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Data Kepala Madrasah (Untuk Tanda Tangan)')
-                    ->schema([
-                        Forms\Components\TextInput::make('headmaster_name')
-                            ->label('Nama Kepala Madrasah')
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('headmaster_nip')
-                            ->label('NIP Kepala Madrasah')
-                            ->maxLength(255),
                     ])->columns(2),
             ]);
     }
@@ -85,8 +77,7 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('jabatan')
                     ->label('Jabatan'),
-                Tables\Columns\TextColumn::make('headmaster_name')
-                    ->label('Kepala Madrasah'),
+
             ])
             ->filters([
                 //
