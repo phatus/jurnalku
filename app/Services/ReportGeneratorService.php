@@ -49,17 +49,50 @@ class ReportGeneratorService
         $template->setValue('headmaster_name', $school->headmaster_name ?? '.........................');
         $template->setValue('headmaster_nip', $school->headmaster_nip ?? '................');
 
-        // Process Rows
+        // Group by Date for Routine Injection
+        $groupedActivities = $activities->groupBy(function($item) {
+            return $item->activity_date->format('Y-m-d');
+        });
+
+        // Flatten back to list with routines
+        $processedActivities = collect();
+
+        foreach ($groupedActivities as $date => $dailyActivities) {
+            $dateObj = Carbon::createFromFormat('Y-m-d', $date);
+            
+            // Determine Routine
+            $routineDescription = $dateObj->isMonday() 
+                ? 'Upacara bendera / Apel pagi' 
+                : 'Murottal Pagi dan Sholat Dhuha';
+            
+            // Create Virtual Routine Activity
+            $routine = new \stdClass();
+            $routine->activity_date = $dateObj;
+            $routine->description = $routineDescription;
+            $routine->reference_source = '-'; // As per request/image
+            $routine->implementationBasis = null; // No relation
+            $routine->output_result = 'Terlaksana';
+
+            // Add Routine PREPENDED to the day
+            $processedActivities->push($routine);
+
+            // Add Real Activities
+            foreach ($dailyActivities as $act) {
+                $processedActivities->push($act);
+            }
+        }
+
+        // Process Rows for Template
         $values = [];
         $no = 1;
         $lastDate = null;
         $lastBasis = null;
 
-        foreach ($activities as $activity) {
+        foreach ($processedActivities as $activity) {
             $currentDate = $activity->activity_date->format('Y-m-d');
             
-            // Get Basis Name (New Relation or Old Field)
-            if ($activity->implementationBasis) {
+            // Get Basis Name
+            if (isset($activity->implementationBasis) && $activity->implementationBasis) {
                 $basisName = $activity->implementationBasis->name;
             } else {
                 $basisName = $activity->reference_source ?? '-';
@@ -76,7 +109,7 @@ class ReportGeneratorService
                 $row['no'] = $no++;
                 $row['hari_tanggal'] = $activity->activity_date->translatedFormat('l, j F Y');
                 
-                // New Day -> Always print Basis (reset merge for basis)
+                // New Day -> Always print Basis
                 $row['dasar'] = $basisName;
                 
                 $lastDate = $currentDate;
