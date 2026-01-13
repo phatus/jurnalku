@@ -13,6 +13,7 @@ class Activity extends Model
         'user_id',
         'category_id',
         'activity_date',
+        'implementation_basis_id',
         'reference_source',
         'description',
         'output_result',
@@ -36,5 +37,15 @@ class Activity extends Model
     public function category()
     {
         return $this->belongsTo(ReportCategory::class, 'category_id');
+    }
+
+    public function implementationBasis()
+    {
+        return $this->belongsTo(ImplementationBasis::class);
+    }
+
+    public function classRooms()
+    {
+        return $this->belongsToMany(ClassRoom::class, 'activity_class_room');
     }
 }

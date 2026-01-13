@@ -50,9 +50,15 @@ class ActivityResource extends Resource
                     ->label('Hasil Pekerjaan / Output')
                     ->maxLength(255),
                 
-                Forms\Components\TextInput::make('reference_source')
-                    ->label('Dasar Pelaksanaan (Optional)')
-                    ->maxLength(255),
+                Forms\Components\Select::make('implementation_basis_id')
+                    ->label('Dasar Pelaksanaan')
+                    ->relationship('implementationBasis', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('name')
+                            ->required()
+                    ]),
 
                 Forms\Components\TextInput::make('evidence_link')
                     ->label('Link Bukti (Google Drive)')
@@ -67,10 +73,11 @@ class ActivityResource extends Resource
                 Forms\Components\Section::make('Detail KBM (Kegiatan Belajar Mengajar)')
                     ->description('Isi detail ini khusus untuk kegiatan KBM.')
                     ->schema([
-                        Forms\Components\TextInput::make('class_name')
+                        Forms\Components\Select::make('classRooms')
                             ->label('Kelas')
-                            ->placeholder('Contoh: 7E')
-                            ->maxLength(255)
+                            ->relationship('classRooms', 'name')
+                            ->multiple()
+                            ->preload()
                             ->required(),
 
                         Forms\Components\Grid::make(2)

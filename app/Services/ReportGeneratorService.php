@@ -24,7 +24,8 @@ class ReportGeneratorService
     public function generateCatkin($month, $year)
     {
         $user = Auth::user();
-        $activities = Activity::where('user_id', $user->id)
+        $activities = Activity::with(['implementationBasis'])
+            ->where('user_id', $user->id)
             ->whereYear('activity_date', $year)
             ->whereMonth('activity_date', $month)
             ->whereNotNull('description')
@@ -32,23 +33,76 @@ class ReportGeneratorService
             ->orderBy('activity_date')
             ->get();
 
+        $template = new TemplateProcessor(storage_path('app/templates/catkin_template.docx'));
+
+        // Header Variables
         $school = SchoolSetting::first();
+        $template->setValue('school_name', $school->school_name ?? 'NAMA MADRASAH BELUM DISET');
+        $template->setValue('school_address', $school->school_address ?? 'Alamat belum diset');
+        $template->setValue('monthName', Carbon::createFromDate($year, $month, 1)->translatedFormat('F'));
+        $template->setValue('year', $year);
+        
+        // Signatures
+        $template->setValue('signatureDate', Carbon::createFromDate($year, $month, 1)->endOfMonth()->translatedFormat('j F Y'));
+        $template->setValue('user_name', $user->name);
+        $template->setValue('user_nip', $user->nip);
+        $template->setValue('headmaster_name', $school->headmaster_name ?? '.........................');
+        $template->setValue('headmaster_nip', $school->headmaster_nip ?? '................');
 
-        $data = [
-            'school' => $school,
-            'user' => $user,
-            'monthName' => Carbon::createFromDate($year, $month, 1)->translatedFormat('F'),
-            'year' => $year,
-            'activities' => $activities,
-            'signatureDate' => Carbon::createFromDate($year, $month, 1)->endOfMonth()->translatedFormat('j F Y'),
-        ];
+        // Process Rows
+        $values = [];
+        $no = 1;
+        $lastDate = null;
+        $lastBasis = null;
 
-        $pdf = Pdf::loadView('reports.catkin_pdf', $data);
-        $pdf->setPaper('A4', 'portrait');
+        foreach ($activities as $activity) {
+            $currentDate = $activity->activity_date->format('Y-m-d');
+            
+            // Get Basis Name (New Relation or Old Field)
+            if ($activity->implementationBasis) {
+                $basisName = $activity->implementationBasis->name;
+            } else {
+                $basisName = $activity->reference_source ?? '-';
+            }
 
-        $filename = "Catkin_{$user->name}_{$month}-{$year}.pdf";
+            $row = [
+                'uraian' => $activity->description,
+                'output' => $activity->output_result ?? 'Terlaksana',
+            ];
+
+            // Merge Logic
+            if ($currentDate !== $lastDate) {
+                // New Day -> Print Date and No
+                $row['no'] = $no++;
+                $row['hari_tanggal'] = $activity->activity_date->translatedFormat('l, j F Y');
+                
+                // New Day -> Always print Basis (reset merge for basis)
+                $row['dasar'] = $basisName;
+                
+                $lastDate = $currentDate;
+                $lastBasis = $basisName;
+            } else {
+                // Same Day -> Empty Date and No
+                $row['no'] = '';
+                $row['hari_tanggal'] = '';
+
+                // Check Basis within same day
+                if ($basisName !== $lastBasis) {
+                    $row['dasar'] = $basisName;
+                    $lastBasis = $basisName;
+                } else {
+                    $row['dasar'] = '';
+                }
+            }
+
+            $values[] = $row;
+        }
+
+        $template->cloneRowAndSetValues('no', $values);
+
+        $filename = "Catkin_{$user->name}_{$month}-{$year}.docx";
         $path = storage_path("app/public/{$filename}");
-        $pdf->save($path);
+        $template->saveAs($path);
 
         return $path;
     }
@@ -60,7 +114,8 @@ class ReportGeneratorService
     public function generateJurnal($month, $year)
     {
         $user = Auth::user();
-        $activities = Activity::where('user_id', $user->id)
+        $activities = Activity::with(['classRooms'])
+            ->where('user_id', $user->id)
             ->whereYear('activity_date', $year)
             ->whereMonth('activity_date', $month)
             ->whereNotNull('description')
@@ -69,23 +124,63 @@ class ReportGeneratorService
             ->orderBy('period_start')
             ->get();
             
-        $school = SchoolSetting::first();
+        $template = new TemplateProcessor(storage_path('app/templates/jurnal_template.docx'));
         
-        $data = [
-            'school' => $school,
-            'user' => $user,
-            'monthName' => Carbon::createFromDate($year, $month, 1)->translatedFormat('F'),
-            'year' => $year,
-            'activities' => $activities,
-            'signatureDate' => Carbon::createFromDate($year, $month, 1)->endOfMonth()->translatedFormat('j F Y'),
-        ];
+        // Header
+        $school = SchoolSetting::first();
+        $template->setValue('school_name', $school->school_name ?? 'NAMA MADRASAH BELUM DISET');
+        $template->setValue('school_address', $school->school_address ?? 'Alamat belum diset');
+        $template->setValue('monthName', Carbon::createFromDate($year, $month, 1)->translatedFormat('F'));
+        $template->setValue('year', $year);
 
-        $pdf = Pdf::loadView('reports.jurnal_pdf', $data);
-        $pdf->setPaper('A4', 'portrait');
+        // Signatures
+        $template->setValue('signatureDate', Carbon::createFromDate($year, $month, 1)->endOfMonth()->translatedFormat('j F Y'));
+        $template->setValue('user_name', $user->name);
+        $template->setValue('user_nip', $user->nip);
+        $template->setValue('headmaster_name', $school->headmaster_name ?? '.........................');
+        $template->setValue('headmaster_nip', $school->headmaster_nip ?? '................');
 
-        $filename = "Jurnal_{$user->name}_{$month}-{$year}.pdf";
+        // Rows
+        $values = [];
+        $no = 1;
+        $lastDate = null;
+
+        foreach ($activities as $activity) {
+            $currentDate = $activity->activity_date->format('Y-m-d');
+            
+            // Format Class Rooms: join names
+            $classNames = $activity->classRooms->count() > 0 
+                ? $activity->classRooms->pluck('name')->join(', ') 
+                : ($activity->class_name ?? '-');
+
+            $jam = ($activity->period_start && $activity->period_end) 
+                ? "{$activity->period_start} - {$activity->period_end}" 
+                : '-';
+
+            $row = [
+                'kelas' => $classNames,
+                'jam' => $jam,
+                'materi' => $activity->topic ?? '-',
+                'ketuntasan' => $activity->student_outcome ?? '',
+            ];
+
+            if ($currentDate !== $lastDate) {
+                $row['no'] = $no++;
+                $row['hari_tanggal'] = $activity->activity_date->translatedFormat('l, j F Y');
+                $lastDate = $currentDate;
+            } else {
+                $row['no'] = '';
+                $row['hari_tanggal'] = '';
+            }
+
+            $values[] = $row;
+        }
+
+        $template->cloneRowAndSetValues('no', $values);
+
+        $filename = "Jurnal_{$user->name}_{$month}-{$year}.docx";
         $path = storage_path("app/public/{$filename}");
-        $pdf->save($path);
+        $template->saveAs($path);
 
         return $path;
     }
