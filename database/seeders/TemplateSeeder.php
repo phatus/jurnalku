@@ -28,11 +28,28 @@ class TemplateSeeder extends Seeder
 
         $section->addTextBreak(2);
         
-        // Signatures (Wider spacing)
-        $signatureTable = $section->addTable(['borderSize' => 0]);
+        // Signatures (Wider spacing, No Borders, Center Alignment)
+        $signatureStyle = ['borderSize' => 0, 'borderColor' => 'FFFFFF', 'cellMargin' => 0];
+        $phpWord->addTableStyle('SigTable', $signatureStyle);
+        $signatureTable = $section->addTable('SigTable');
+        
         $signatureTable->addRow();
-        $signatureTable->addCell(7000)->addText("Mengetahui,\nKepala Madrasah\n\n\n\n\${headmaster_name}\nNIP. \${headmaster_nip}");
-        $signatureTable->addCell(7000)->addText("Pacitan, \${signatureDate}\nYang membuat,\n\n\n\n\${user_name}\nNIP. \${user_nip}");
+        
+        // Left Signature
+        $cell1 = $signatureTable->addCell(7500);
+        $cell1->addText("Mengetahui,", [], ['alignment' => 'center']);
+        $cell1->addText("Kepala Madrasah", [], ['alignment' => 'center']);
+        $cell1->addTextBreak(3);
+        $cell1->addText('${headmaster_name}', ['bold' => true, 'underline' => 'single'], ['alignment' => 'center']);
+        $cell1->addText("NIP. \${headmaster_nip}", [], ['alignment' => 'center']);
+
+        // Right Signature
+        $cell2 = $signatureTable->addCell(7500);
+        $cell2->addText("Pacitan, \${signatureDate}", [], ['alignment' => 'center']);
+        $cell2->addText("Yang membuat,", [], ['alignment' => 'center']);
+        $cell2->addTextBreak(3);
+        $cell2->addText('${user_name}', ['bold' => true, 'underline' => 'single'], ['alignment' => 'center']);
+        $cell2->addText("NIP. \${user_nip}", [], ['alignment' => 'center']);
 
         $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
         $objWriter->save(storage_path('app/templates/catkin_template.docx'));
