@@ -78,6 +78,11 @@ class ActivityResource extends Resource
                             ->relationship('classRooms', 'name')
                             ->multiple()
                             ->preload()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->required()
+                                    ->label('Nama Kelas')
+                            ])
                             ->required(),
 
                         Forms\Components\Grid::make(2)
