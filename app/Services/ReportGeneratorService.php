@@ -232,12 +232,12 @@ class ReportGeneratorService
 
         // Table Header
         $table->addRow();
-        $table->addCell(700)->addText('NO.', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(2500)->addText('HARI/TANGGAL', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(2000)->addText('KELAS', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(2000)->addText('JAM KE-', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(5000)->addText('URAIAN PEKERJAAN', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(2500)->addText('KET.', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(500)->addText('NO.', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(1800)->addText('HARI/TANGGAL', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(1200)->addText('KELAS', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(1200)->addText('JAM KE-', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(3300)->addText('URAIAN PEKERJAAN', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(1500)->addText('KET.', ['bold' => true], ['alignment' => 'center']);
 
         $no = 1;
         $lastDate = null;
@@ -261,29 +261,29 @@ class ReportGeneratorService
 
             // 1. NO (Merge logic)
             if ($currentDate !== $lastDate) {
-                $table->addCell(700, ['vMerge' => 'restart'])->addText($no++);
+                $table->addCell(500, ['vMerge' => 'restart'])->addText($no++);
             } else {
-                $table->addCell(700, ['vMerge' => 'continue']);
+                $table->addCell(500, ['vMerge' => 'continue']);
             }
 
             // 2. DATE (Merge logic)
             if ($currentDate !== $lastDate) {
-                $table->addCell(2500, ['vMerge' => 'restart'])->addText($activity->activity_date->translatedFormat('l, j F Y'));
+                $table->addCell(1800, ['vMerge' => 'restart'])->addText($activity->activity_date->translatedFormat('l, j F Y'));
             } else {
-                $table->addCell(2500, ['vMerge' => 'continue']);
+                $table->addCell(1800, ['vMerge' => 'continue']);
             }
 
             // 3. KELAS
-            $table->addCell(2000)->addText($classNames);
+            $table->addCell(1200)->addText($classNames);
 
             // 4. JAM
-            $table->addCell(2000)->addText($jam);
+            $table->addCell(1200)->addText($jam);
 
             // 5. URAIAN
-            $table->addCell(5000)->addText($materi);
+            $table->addCell(3300)->addText($materi);
 
             // 6. KET
-            $table->addCell(2500)->addText($ket);
+            $table->addCell(1500)->addText($ket);
 
             $lastDate = $currentDate;
         }
