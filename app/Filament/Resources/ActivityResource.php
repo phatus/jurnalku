@@ -22,6 +22,17 @@ class ActivityResource extends Resource
 
     protected static ?string $navigationLabel = 'Kegiatan Harian';
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (Auth::user()->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where('user_id', Auth::id());
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -140,7 +151,12 @@ class ActivityResource extends Resource
                     ->boolean(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('user_id')
+                    ->label('Guru / User')
+                    ->relationship('user', 'name')
+                    ->visible(fn () => Auth::user()->isAdmin())
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

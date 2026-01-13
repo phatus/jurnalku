@@ -21,7 +21,10 @@ class User extends Authenticatable implements FilamentUser
     protected $fillable = [
         'name',
         'email',
+        'name',
+        'email',
         'password',
+        'role',
         'nip',
         'pangkat_gol',
         'jabatan',
@@ -62,5 +65,10 @@ class User extends Authenticatable implements FilamentUser
     public function activities()
     {
         return $this->hasMany(Activity::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }

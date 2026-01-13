@@ -18,6 +18,23 @@ class UserResource extends Resource
     
     protected static ?string $navigationLabel = 'Data Guru / Profil';
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (Auth::user()->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where('id', Auth::id());
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->isAdmin();
+    }
+
+
     public static function form(Form $form): Form
     {
         return $form
