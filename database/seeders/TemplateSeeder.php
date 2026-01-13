@@ -23,29 +23,8 @@ class TemplateSeeder extends Seeder
         $section->addText('CATATAN KINERJA BULAN ${monthName} ${year}', ['bold' => true, 'size' => 14], ['alignment' => 'center']);
         $section->addTextBreak(1);
 
-        $tableStyle = [
-            'borderSize' => 6, 
-            'borderColor' => '000000', 
-            'cellMargin' => 50
-        ];
-        $phpWord->addTableStyle('Catkin Table', $tableStyle);
-        $table = $section->addTable('Catkin Table');
-
-        // Header - Adjusted widths for Landscape (approx 15000 twips total)
-        $table->addRow();
-        $table->addCell(700)->addText('NO', ['bold' => true]);
-        $table->addCell(2500)->addText('HARI/TANGGAL', ['bold' => true]);
-        $table->addCell(4000)->addText('DASAR PELAKSANAAN', ['bold' => true]);
-        $table->addCell(5500)->addText('URAIAN PEKERJAAN', ['bold' => true]);
-        $table->addCell(2500)->addText('HASIL', ['bold' => true]);
-
-        // Row for Cloning
-        $table->addRow();
-        $table->addCell(700)->addText('${no}');
-        $table->addCell(2500)->addText('${hari_tanggal}');
-        $table->addCell(4000)->addText('${dasar}');
-        $table->addCell(5500)->addText('${uraian}');
-        $table->addCell(2500)->addText('${output}');
+        // Placeholder for Programmatic Table
+        $section->addText('${table_block}');
 
         $section->addTextBreak(2);
         

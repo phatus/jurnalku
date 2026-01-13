@@ -82,13 +82,30 @@ class ReportGeneratorService
             }
         }
 
-        // Process Rows for Template
-        $values = [];
+        // Process Rows for Table
+        $table = new \PhpOffice\PhpWord\Element\Table([
+            'borderSize' => 6, 
+            'borderColor' => '000000', 
+            'cellMargin' => 50,
+            'alignment' => \PhpOffice\PhpWord\SimpleType\JcTable::CENTER,
+            'unit' => \PhpOffice\PhpWord\SimpleType\TblWidth::PERCENT, 
+            'width' => 100 * 50 // 5000 % ? No, width usually in pct is 50*100 = 5000 (meaning 100%). Doc says 5000 = 100%.
+        ]);
+        
+        // Header
+        $table->addRow();
+        $table->addCell(700)->addText('NO', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(2500)->addText('HARI/TANGGAL', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(3500)->addText('DASAR PELAKSANAAN', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(5000)->addText('URAIAN PEKERJAAN', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(2500)->addText('HASIL PEKERJAAN/OUTPUT', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(1500)->addText('PARAF ATASAN', ['bold' => true], ['alignment' => 'center']);
+
         $no = 1;
         $lastDate = null;
         $lastBasis = null;
 
-        foreach ($processedActivities as $activity) {
+        foreach ($processedActivities as $index => $activity) {
             $currentDate = $activity->activity_date->format('Y-m-d');
             
             // Get Basis Name
@@ -98,40 +115,52 @@ class ReportGeneratorService
                 $basisName = $activity->reference_source ?? '-';
             }
 
-            $row = [
-                'uraian' => $activity->description,
-                'output' => $activity->output_result ?? 'Terlaksana',
-            ];
+            $table->addRow();
 
-            // Merge Logic
+            // 1. NO Column (Restart if new day)
             if ($currentDate !== $lastDate) {
-                // New Day -> Print Date and No
-                $row['no'] = $no++;
-                $row['hari_tanggal'] = $activity->activity_date->translatedFormat('l, j F Y');
-                
-                // New Day -> Always print Basis
-                $row['dasar'] = $basisName;
-                
-                $lastDate = $currentDate;
-                $lastBasis = $basisName;
+                $table->addCell(700, ['vMerge' => 'restart'])->addText($no++);
             } else {
-                // Same Day -> Empty Date and No
-                $row['no'] = '';
-                $row['hari_tanggal'] = '';
-
-                // Check Basis within same day
-                if ($basisName !== $lastBasis) {
-                    $row['dasar'] = $basisName;
-                    $lastBasis = $basisName;
-                } else {
-                    $row['dasar'] = '';
-                }
+                $table->addCell(700, ['vMerge' => 'continue']);
             }
 
-            $values[] = $row;
+            // 2. DATE Column (Restart if new day)
+            if ($currentDate !== $lastDate) {
+                $table->addCell(2500, ['vMerge' => 'restart'])->addText($activity->activity_date->translatedFormat('l, j F Y'));
+            } else {
+                $table->addCell(2500, ['vMerge' => 'continue']);
+            }
+
+            // 3. DASAR Column (Restart if new basis OR new day)
+            // Logic: Reset merge if New Day OR (Same Day AND Diff Basis)
+            if ($currentDate !== $lastDate) {
+                 // New Day -> Always Restart, write basis
+                 $table->addCell(3500, ['vMerge' => 'restart'])->addText($basisName);
+            } else {
+                 // Same Day
+                 if ($basisName !== $lastBasis) {
+                     // Different Basis -> Restart and write
+                     $table->addCell(3500, ['vMerge' => 'restart'])->addText($basisName);
+                 } else {
+                     // Same Basis -> Continue merge
+                     $table->addCell(3500, ['vMerge' => 'continue']);
+                 }
+            }
+
+            // 4. URAIAN (Always unique)
+            $table->addCell(5000)->addText($activity->description);
+
+            // 5. HASIL (Always unique)
+            $table->addCell(2500)->addText($activity->output_result ?? 'Terlaksana');
+
+            // 6. PARAF (Empty)
+            $table->addCell(1500)->addText('');
+
+            $lastDate = $currentDate;
+            $lastBasis = $basisName;
         }
 
-        $template->cloneRowAndSetValues('no', $values);
+        $template->setComplexBlock('table_block', $table);
 
         $filename = "Catkin_{$user->name}_{$month}-{$year}.docx";
         $path = storage_path("app/public/{$filename}");
