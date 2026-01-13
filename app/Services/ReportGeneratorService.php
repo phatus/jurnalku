@@ -256,8 +256,8 @@ class ReportGeneratorService
         $cellJam->addText('JAM', ['bold' => true], ['alignment' => 'center']);
         $cellJam->addText('KE-', ['bold' => true], ['alignment' => 'center']);
 
-        $table->addCell(4000, ['valign' => 'center'])->addText('URAIAN PEKERJAAN', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(1300, ['valign' => 'center'])->addText('KET.', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(3800, ['valign' => 'center'])->addText('URAIAN PEKERJAAN', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(2400, ['valign' => 'center'])->addText('KET.', ['bold' => true], ['alignment' => 'center']);
 
         $no = 1;
         $lastDate = null;
@@ -301,10 +301,10 @@ class ReportGeneratorService
             $table->addCell(900, ['valign' => 'top'])->addText($jam);
 
             // 5. URAIAN
-            $table->addCell(4000, ['valign' => 'top'])->addText($materi);
+            $table->addCell(3800, ['valign' => 'top'])->addText($materi);
 
             // 6. KET
-            $table->addCell(1300, ['valign' => 'top'])->addText($ket);
+            $table->addCell(2400, ['valign' => 'top'])->addText($ket);
 
             $lastDate = $currentDate;
         }

@@ -58,8 +58,16 @@ class TemplateSeeder extends Seeder
     protected function createJurnalTemplate()
     {
         $phpWord = new PhpWord();
-        // Portrait Orientation (Default)
-        $section = $phpWord->addSection();
+        // Portrait Orientation, Margins 1.27cm (720 twips), Gutter 1cm (567 twips)
+        $sectionStyle = [
+            'orientation' => 'portrait',
+            'marginTop' => 720,
+            'marginBottom' => 720,
+            'marginLeft' => 720,
+            'marginRight' => 720,
+            'gutter' => 567,
+        ];
+        $section = $phpWord->addSection($sectionStyle);
 
         // Header
         $section->addText('JURNAL MENGAJAR GURU', ['bold' => true, 'size' => 14], ['alignment' => 'center']);
