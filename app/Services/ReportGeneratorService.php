@@ -232,12 +232,20 @@ class ReportGeneratorService
 
         // Table Header
         $table->addRow();
-        $table->addCell(500)->addText('NO.', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(1800)->addText('HARI/TANGGAL', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(1200)->addText('KELAS', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(1200)->addText('JAM KE-', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(3300)->addText('URAIAN PEKERJAAN', ['bold' => true], ['alignment' => 'center']);
-        $table->addCell(1500)->addText('KET.', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(500, ['valign' => 'center'])->addText('NO.', ['bold' => true], ['alignment' => 'center']);
+        
+        $cellDate = $table->addCell(1400, ['valign' => 'center']);
+        $cellDate->addText('HARI/', ['bold' => true], ['alignment' => 'center']);
+        $cellDate->addText('TANGGAL', ['bold' => true], ['alignment' => 'center']);
+
+        $table->addCell(900, ['valign' => 'center'])->addText('KELAS', ['bold' => true], ['alignment' => 'center']);
+        
+        $cellJam = $table->addCell(900, ['valign' => 'center']);
+        $cellJam->addText('JAM', ['bold' => true], ['alignment' => 'center']);
+        $cellJam->addText('KE-', ['bold' => true], ['alignment' => 'center']);
+
+        $table->addCell(4000, ['valign' => 'center'])->addText('URAIAN PEKERJAAN', ['bold' => true], ['alignment' => 'center']);
+        $table->addCell(1300, ['valign' => 'center'])->addText('KET.', ['bold' => true], ['alignment' => 'center']);
 
         $no = 1;
         $lastDate = null;
@@ -261,29 +269,30 @@ class ReportGeneratorService
 
             // 1. NO (Merge logic)
             if ($currentDate !== $lastDate) {
-                $table->addCell(500, ['vMerge' => 'restart'])->addText($no++);
+                $table->addCell(500, ['vMerge' => 'restart', 'valign' => 'top'])->addText($no++);
             } else {
-                $table->addCell(500, ['vMerge' => 'continue']);
+                $table->addCell(500, ['vMerge' => 'continue', 'valign' => 'top']);
             }
 
             // 2. DATE (Merge logic)
             if ($currentDate !== $lastDate) {
-                $table->addCell(1800, ['vMerge' => 'restart'])->addText($activity->activity_date->translatedFormat('l, j F Y'));
+                // Use addText with break for "Hari, d Month Y" if needed or keep standard
+                $table->addCell(1400, ['vMerge' => 'restart', 'valign' => 'top'])->addText($activity->activity_date->translatedFormat('l, j F Y'));
             } else {
-                $table->addCell(1800, ['vMerge' => 'continue']);
+                $table->addCell(1400, ['vMerge' => 'continue', 'valign' => 'top']);
             }
 
             // 3. KELAS
-            $table->addCell(1200)->addText($classNames);
+            $table->addCell(900, ['valign' => 'top'])->addText($classNames);
 
             // 4. JAM
-            $table->addCell(1200)->addText($jam);
+            $table->addCell(900, ['valign' => 'top'])->addText($jam);
 
             // 5. URAIAN
-            $table->addCell(3300)->addText($materi);
+            $table->addCell(4000, ['valign' => 'top'])->addText($materi);
 
             // 6. KET
-            $table->addCell(1500)->addText($ket);
+            $table->addCell(1300, ['valign' => 'top'])->addText($ket);
 
             $lastDate = $currentDate;
         }
