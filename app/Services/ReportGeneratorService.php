@@ -399,14 +399,14 @@ class ReportGeneratorService
 
         // Add Upacara (Mondays)
         $addRoutineSummary(
-            'Melaksanakan Upacara Bendera / Apel Pagi', 
+            'Upacara bendera / Apel pagi', 
             $mondayCount, 
             'Terlaksananya kegiatan pembiasaan dan kedisiplinan siswa'
         );
 
         // Add Murottal (Tue-Fri)
         $addRoutineSummary(
-            'Membimbing Murottal dan Sholat Dhuha Berjamaah', 
+            'Murottal dan Sholat Dhuha berjamaah', 
             $otherDayCount, 
             'Terlaksananya kegiatan keagamaan dan pembiasaan siswa'
         );
