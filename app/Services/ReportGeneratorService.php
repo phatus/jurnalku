@@ -53,36 +53,50 @@ class ReportGeneratorService
         $template->setValue('headmaster_name', $school->headmaster_name ?? '.........................');
         $template->setValue('headmaster_nip', $school->headmaster_nip ?? '................');
 
-        // Group by Date for Routine Injection
+        // Initialize processed activities collection
+        $processedActivities = collect();
+        
+        // Group existing activities by date
         $groupedActivities = $activities->groupBy(function($item) {
             return $item->activity_date->format('Y-m-d');
         });
 
-        // Flatten back to list with routines
-        $processedActivities = collect();
-
-        foreach ($groupedActivities as $date => $dailyActivities) {
-            $dateObj = Carbon::createFromFormat('Y-m-d', $date);
+        // Loop through all days of the month
+        $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+        
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $dateObj = Carbon::createFromDate($year, $month, $day);
             
+            // Skip Sunday and Saturday (School only until Friday)
+            if ($dateObj->isSunday() || $dateObj->isSaturday()) {
+                continue;
+            }
+
+            $dateStr = $dateObj->format('Y-m-d');
+
             // Determine Routine
+            // Monday: Upacara/Apel
+            // Tue-Fri: Murottal/Dhuha
             $routineDescription = $dateObj->isMonday() 
                 ? 'Upacara bendera / Apel pagi' 
-                : 'Murottal Pagi dan Sholat Dhuha';
+                : 'Murottal dan Sholat Dhuha berjamaah';
             
             // Create Virtual Routine Activity
             $routine = new \stdClass();
-            $routine->activity_date = $dateObj;
+            $routine->activity_date = $dateObj->copy();
             $routine->description = $routineDescription;
-            $routine->reference_source = '-'; // As per request/image
-            $routine->implementationBasis = null; // No relation
+            $routine->reference_source = '-';
+            $routine->implementationBasis = null;
             $routine->output_result = 'Terlaksana';
 
-            // Add Routine PREPENDED to the day
+            // Add Routine (always first on the day)
             $processedActivities->push($routine);
 
-            // Add Real Activities
-            foreach ($dailyActivities as $act) {
-                $processedActivities->push($act);
+            // Add Real Activities for this day
+            if ($groupedActivities->has($dateStr)) {
+                foreach ($groupedActivities[$dateStr] as $act) {
+                    $processedActivities->push($act);
+                }
             }
         }
 
@@ -336,6 +350,60 @@ class ReportGeneratorService
             ->with('category')
             ->get()
             ->groupBy('category_id');
+
+        // Automatic Routines for Labul (Summary)
+        $startDate = Carbon::createFromDate($year, $month, 1);
+        $daysInMonth = $startDate->daysInMonth;
+        
+        $mondayCount = 0;
+        $otherDayCount = 0; // Tue-Fri
+
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $d = Carbon::createFromDate($year, $month, $day);
+            if ($d->isSunday() || $d->isSaturday()) continue;
+
+            if ($d->isMonday()) {
+                $mondayCount++;
+            } else {
+                $otherDayCount++;
+            }
+        }
+
+        // Helper to create category and activity collection
+        $addRoutineSummary = function($name, $count, $rhk_label) use ($reportData) {
+            if ($count > 0) {
+                // Create Virtual Category
+                $cat = new ReportCategory();
+                $cat->name = $name;
+                $cat->rhk_label = $rhk_label;
+                
+                // Create Collection of Virtual Activities (only need count logic usually, but code uses .count())
+                $acts = collect();
+                for ($i=0; $i < $count; $i++) {
+                    $a = new Activity();
+                    $a->setRelation('category', $cat);
+                    $a->evidence_link = '-';
+                    $acts->push($a);
+                }
+                
+                // Use a unique negative key to avoid collision with real IDs
+                $reportData->put('routine_' . \Illuminate\Support\Str::slug($name), $acts);
+            }
+        };
+
+        // Add Upacara (Mondays)
+        $addRoutineSummary(
+            'Melaksanakan Upacara Bendera / Apel Pagi', 
+            $mondayCount, 
+            'Terlaksananya kegiatan pembiasaan dan kedisiplinan siswa'
+        );
+
+        // Add Murottal (Tue-Fri)
+        $addRoutineSummary(
+            'Membimbing Murottal dan Sholat Dhuha Berjamaah', 
+            $otherDayCount, 
+            'Terlaksananya kegiatan keagamaan dan pembiasaan siswa'
+        );
 
         $template = new TemplateProcessor(storage_path('app/templates/labul_template.docx'));
 
