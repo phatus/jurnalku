@@ -61,42 +61,36 @@ class ReportGeneratorService
             return $item->activity_date->format('Y-m-d');
         });
 
-        // Loop through all days of the month
-        $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-        
-        for ($day = 1; $day <= $daysInMonth; $day++) {
-            $dateObj = Carbon::createFromDate($year, $month, $day);
+        // Iterate ONLY over days that have activities
+        foreach ($groupedActivities as $date => $dailyActivities) {
+            $dateObj = Carbon::createFromFormat('Y-m-d', $date);
             
-            // Skip Sunday and Saturday (School only until Friday)
-            if ($dateObj->isSunday() || $dateObj->isSaturday()) {
-                continue;
+            // Skip Sunday and Saturday if any activities somehow exist there (optional safety)
+            // But per request "Check user input", if user input on Sunday, maybe we shouldn't add routine? 
+            // Request said "Only add when user added activity", implied "on that day".
+            // Let's stick to: If it's Mon-Fri AND has activity -> Add routine.
+            
+            if (!$dateObj->isSunday() && !$dateObj->isSaturday()) {
+                // Determine Routine
+                $routineDescription = $dateObj->isMonday() 
+                    ? 'Upacara bendera / Apel pagi' 
+                    : 'Murottal dan Sholat Dhuha berjamaah';
+                
+                // Create Virtual Routine Activity
+                $routine = new \stdClass();
+                $routine->activity_date = $dateObj->copy();
+                $routine->description = $routineDescription;
+                $routine->reference_source = '-';
+                $routine->implementationBasis = null;
+                $routine->output_result = 'Terlaksana';
+
+                // Add Routine PREPENDED to the day
+                $processedActivities->push($routine);
             }
 
-            $dateStr = $dateObj->format('Y-m-d');
-
-            // Determine Routine
-            // Monday: Upacara/Apel
-            // Tue-Fri: Murottal/Dhuha
-            $routineDescription = $dateObj->isMonday() 
-                ? 'Upacara bendera / Apel pagi' 
-                : 'Murottal dan Sholat Dhuha berjamaah';
-            
-            // Create Virtual Routine Activity
-            $routine = new \stdClass();
-            $routine->activity_date = $dateObj->copy();
-            $routine->description = $routineDescription;
-            $routine->reference_source = '-';
-            $routine->implementationBasis = null;
-            $routine->output_result = 'Terlaksana';
-
-            // Add Routine (always first on the day)
-            $processedActivities->push($routine);
-
-            // Add Real Activities for this day
-            if ($groupedActivities->has($dateStr)) {
-                foreach ($groupedActivities[$dateStr] as $act) {
-                    $processedActivities->push($act);
-                }
+            // Add Real Activities
+            foreach ($dailyActivities as $act) {
+                $processedActivities->push($act);
             }
         }
 
@@ -351,15 +345,27 @@ class ReportGeneratorService
             ->get()
             ->groupBy('category_id');
 
-        // Automatic Routines for Labul (Summary)
-        $startDate = Carbon::createFromDate($year, $month, 1);
-        $daysInMonth = $startDate->daysInMonth;
+        // Automatic Routines for Labul (Summary) - Based on Days Present
+        // Calculate based on distinct dates in the reportData
+        // We need the raw list of activities first to get dates
+        $allActivities = Activity::query()
+            ->where('user_id', $user->id)
+            ->whereYear('activity_date', $year)
+            ->whereMonth('activity_date', $month)
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
+            ->get();
+
+        $uniqueDates = $allActivities->pluck('activity_date')
+            ->map(fn($date) => $date->format('Y-m-d'))
+            ->unique();
         
         $mondayCount = 0;
         $otherDayCount = 0; // Tue-Fri
 
-        for ($day = 1; $day <= $daysInMonth; $day++) {
-            $d = Carbon::createFromDate($year, $month, $day);
+        foreach ($uniqueDates as $dateStr) {
+            $d = Carbon::createFromFormat('Y-m-d', $dateStr);
+            
             if ($d->isSunday() || $d->isSaturday()) continue;
 
             if ($d->isMonday()) {
