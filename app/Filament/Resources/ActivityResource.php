@@ -24,10 +24,10 @@ class ActivityResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with(['category']);
 
         if (Auth::user()->isAdmin()) {
-            return $query;
+            return $query->with(['user']);
         }
 
         return $query->where('user_id', Auth::id());
@@ -47,8 +47,18 @@ class ActivityResource extends Resource
                     ->required(),
 
                 Forms\Components\Select::make('category_id')
-                    ->label('Kategori Kegiatan')
+                    ->label('RHK (Rencana Hasil Kerja)')
                     ->relationship('category', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nama RHK')
+                            ->required(),
+                        Forms\Components\TextInput::make('rhk_label')
+                            ->label('Label RHK (untuk laporan)')
+                            ->required(),
+                    ])
                     ->live()
                     ->required(),
 
@@ -138,7 +148,7 @@ class ActivityResource extends Resource
                     ->date('d M Y')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('category.name')
-                    ->label('Kategori')
+                    ->label('RHK')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('description')
                     ->label('Uraian')
@@ -157,6 +167,31 @@ class ActivityResource extends Resource
                     ->visible(fn () => Auth::user()->isAdmin())
                     ->searchable()
                     ->preload(),
+                Tables\Filters\SelectFilter::make('month')
+                    ->label('Bulan Kegiatan')
+                    ->options([
+                        '1' => 'Januari', '2' => 'Februari', '3' => 'Maret',
+                        '4' => 'April', '5' => 'Mei', '6' => 'Juni',
+                        '7' => 'Juli', '8' => 'Agustus', '9' => 'September',
+                        '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (! empty($data['value'])) {
+                            return $query->whereMonth('activity_date', $data['value']);
+                        }
+                        return $query;
+                    })
+                    ->default(now()->month),
+                Tables\Filters\SelectFilter::make('year')
+                    ->label('Tahun')
+                    ->options(collect(range(now()->year - 5, now()->year + 1))->mapWithKeys(fn ($year) => [$year => $year])->toArray())
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (! empty($data['value'])) {
+                            return $query->whereYear('activity_date', $data['value']);
+                        }
+                        return $query;
+                    })
+                    ->default(now()->year),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
